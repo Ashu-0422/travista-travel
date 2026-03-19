@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b3c5d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Travista">
+  <title>{{ trip.tripname or "Trip Details" }}</title>
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
+  <link rel="icon" href="{{ url_for('static', filename='icons/app-icon.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='package_detail.css') }}" />
+</head>
+<body>
+  <nav>
+    <div class="logo">Travista</div>
+    <a href="{{ url_for('home') }}" class="back-link">Back to Packages</a>
+  </nav>
+
+  <main class="detail-page">
+    <section class="hero-card">
+      <img
+        class="hero-image"
+        src="{{ url_for('static', filename='uploads/' + trip.cover_image) if trip.cover_image else 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e' }}"
+        alt="Trip cover image"
+      />
+      <div class="hero-content">
+        <div class="hero-header">
+          <h1>{{ trip.tripname or "Travel Package" }}</h1>
+          <div class="price-block">
+            <div class="price">&#8377;{{ trip.price }}</div>
+            <div class="operator-swipe" data-swipe-toggle aria-expanded="false">
+              <div class="operator-swipe__track">
+                <span>Swipe for Operator</span>
+                <div class="operator-swipe__thumb"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="meta">{{ trip.sourcee }} &rarr; {{ trip.destination }} | {{ trip.trip_days }} days | {{ trip.travel_mode or "Travel" }}</p>
+        <p class="summary">{{ trip.destination_overview or "No destination overview available." }}</p>
+        <div class="operator-toggle">
+          <div class="operator-panel" data-operator-panel>
+            <p><strong>Name:</strong> {{ trip.name or "-" }}</p>
+            <p><strong>Email:</strong> {{ trip.email or "-" }}</p>
+            <p><strong>Phone:</strong> {{ trip.tel or "-" }}</p>
+          </div>
+        </div>
+        <div class="detail-grid">
+          <p><strong>Journey Start:</strong> {{ trip.journey_start or "-" }}</p>
+          <p><strong>Pickup Time:</strong> {{ trip.pick_time or "-" }}</p>
+          <p><strong>Maximum People:</strong> {{ trip.maximumpeople or "-" }}</p>
+          <p><strong>Hotel Details:</strong> {{ trip.hotel_details or "-" }}</p>
+          <p><strong>Places to Visit:</strong> {{ trip.places_visit or "-" }}</p>
+          <p><strong>Amenities:</strong> {{ trip.amenities or "-" }}</p>
+        </div>
+        {% if has_booked %}
+          <button class="book-now disabled" type="button" disabled>Already Booked</button>
+        {% else %}
+          <a class="book-now" href="{{ url_for('book_trip', trip_id=trip.id) }}">Book Now</a>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="images-grid">
+      <div class="image-card">
+        <h3>Hotel</h3>
+        <img
+          src="{{ url_for('static', filename='uploads/' + trip.hotel_image) if trip.hotel_image else 'https://images.unsplash.com/photo-1566073771259-6a8506099945' }}"
+          alt="Hotel image"
+        />
+      </div>
+      <div class="image-card">
+        <h3>Destination</h3>
+        <img
+          src="{{ url_for('static', filename='uploads/' + trip.place_image) if trip.place_image else 'https://images.unsplash.com/photo-1528127269322-539801943592' }}"
+          alt="Destination image"
+        />
+      </div>
+    </section>
+
+    <section class="day-plan">
+      <h2>Day-wise Itinerary</h2>
+      {% if days %}
+        {% for day in days %}
+          <article class="day-card">
+            <div class="day-head">
+              <h3>Day {{ day.day_no }} - {{ day.place or "Destination" }}</h3>
+              <span>{{ day.day_date or "-" }} | {{ day.time or "-" }}</span>
+            </div>
+            <p>{{ day.tplan or "No plan details available." }}</p>
+            {% if day.image_names or day.image_name %}
+              <div class="day-images">
+                {% if day.image_names %}
+                  {% for image_name in day.image_names %}
+                    <img
+                      src="{{ url_for('static', filename='uploads/' + image_name) }}"
+                      alt="Day {{ day.day_no }} image {{ loop.index }}"
+                      data-day="{{ day.day_no }}"
+                      data-src="{{ url_for('static', filename='uploads/' + image_name) }}"
+                    />
+                  {% endfor %}
+                {% elif day.image_name %}
+                  <img
+                    src="{{ url_for('static', filename='uploads/' + day.image_name) }}"
+                    alt="Day {{ day.day_no }} image"
+                    data-day="{{ day.day_no }}"
+                    data-src="{{ url_for('static', filename='uploads/' + day.image_name) }}"
+                  />
+                {% endif %}
+              </div>
+            {% endif %}
+          </article>
+        {% endfor %}
+      {% else %}
+        <p class="empty-msg">No day-wise itinerary has been added for this trip yet.</p>
+      {% endif %}
+    </section>
+  </main>
+  <div class="image-modal" id="imageModal" aria-hidden="true">
+    <div class="image-modal__backdrop" data-close-modal></div>
+    <div class="image-modal__content">
+      <div class="image-modal__header">
+        <h3 id="imageModalTitle">Day Images</h3>
+        <button type="button" class="image-modal__close" data-close-modal>Close</button>
+      </div>
+      <div class="image-modal__grid" id="imageModalGrid"></div>
+    </div>
+  </div>
+  <script src="{{ url_for('static', filename='package_detail.js') }}"></script>
+  <script src="{{ url_for('static', filename='mobile-app.js') }}"></script>
+</body>
+</html>

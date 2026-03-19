@@ -1,0 +1,25 @@
+{
+  "name": "Travista",
+  "short_name": "Travista",
+  "description": "Travel booking and operator dashboard",
+  "start_url": "/index",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f4f7fb",
+  "theme_color": "#0b3c5d",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/static/icons/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/icons/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b3c5d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Travista">
+  <title>Travista | Profile</title>
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
+  <link rel="icon" href="{{ url_for('static', filename='icons/app-icon.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='profile.css') }}" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="{{ url_for('home') }}">Travista</a>
+    <nav class="top-actions">
+      {% if role == "tour operator" %}
+      <a href="{{ url_for('operator_dashboard') }}">Operator Dashboard</a>
+      {% endif %}
+      <a href="{{ url_for('home') }}">Home</a>
+      <a href="{{ url_for('logout') }}">Logout</a>
+    </nav>
+  </header>
+
+  <main class="profile-shell">
+    <section class="hero-card">
+      <div class="avatar">{{ (user.username or "U")[:1]|upper }}</div>
+      <div>
+        <p class="chip">{{ role|title }}</p>
+        <h1>{{ user.name }}</h1>
+        <p class="sub">{{ user.username }} | {{ user.email }}</p>
+      </div>
+    </section>
+
+    <section class="meta-grid">
+      <article>
+        <h3>Username</h3>
+        <p>{{ user.username }}</p>
+      </article>
+      <article>
+        <h3>Full Name</h3>
+        <p>{{ user.name }}</p>
+      </article>
+      <article>
+        <h3>Phone</h3>
+        <p>{{ user.phone }}</p>
+      </article>
+      <article>
+        <h3>Location</h3>
+        <p>{{ user.city }}, {{ user.state }}</p>
+      </article>
+      <article>
+        <h3>Address</h3>
+        <p>{{ user.address }}</p>
+      </article>
+      <article>
+        <h3>Pincode</h3>
+        <p>{{ user.pincode }}</p>
+      </article>
+    </section>
+
+    <section class="stats-grid">
+      <article class="stat-card">
+        <h2>{{ profile_stats.total }}</h2>
+        <p>{% if role == "tour operator" %}Trips Added{% else %}Trips Booked{% endif %}</p>
+      </article>
+      <article class="stat-card">
+        <h2>{{ profile_stats.completed }}</h2>
+        <p>Completed Trips</p>
+      </article>
+      <article class="stat-card">
+        <h2>{{ profile_stats.upcoming }}</h2>
+        <p>Upcoming Trips</p>
+      </article>
+    </section>
+
+    {% if role == "tour operator" %}
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Your Added Trips</h2>
+          <span>{{ operator_trips|length }} entries</span>
+        </div>
+        {% if operator_trips %}
+          <div class="rows">
+            {% for trip in operator_trips %}
+              <article class="row">
+                <div>
+                  <h3>{{ trip.tripname }}</h3>
+                  <p>{{ trip.sourcee }} -> {{ trip.destination }}</p>
+                </div>
+                <div>
+                  <p>{{ trip.sourcedate }} to {{ trip.destinationdate }}</p>
+                  <p>Rs. {{ trip.price }} | {{ trip.trip_days }} days</p>
+                </div>
+              </article>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="empty">No trips added yet.</p>
+        {% endif %}
+      </section>
+    {% else %}
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Your Booking Timeline</h2>
+          <span>{{ traveller_bookings|length }} entries</span>
+        </div>
+        {% if traveller_bookings %}
+          <div class="rows">
+            {% for booking in traveller_bookings %}
+              <article class="row">
+                <div>
+                  <h3>{{ booking.tripname or "Trip" }}</h3>
+                  <p>Ref: {{ booking.booking_ref }} | {{ booking.travelers }} travellers</p>
+                  <p>Booked on: {{ booking.created_at or "-" }}</p>
+                </div>
+                <div>
+                  <p>{{ booking.sourcee or "-" }} -> {{ booking.destination or "-" }}</p>
+                  <p>{{ booking.sourcedate or "-" }} to {{ booking.destinationdate or "-" }}</p>
+                  {% if booking.trip_id %}
+                    <div class="booking-actions">
+                      {% if not booking.is_completed %}
+                        <a href="{{ url_for('book_trip', trip_id=booking.trip_id) }}">View Booking Details</a>
+                        <a href="{{ url_for('trip_chat', trip_id=booking.trip_id) }}">Open Trip Chat</a>
+                      {% else %}
+                        <a href="{{ url_for('trip_chat', trip_id=booking.trip_id) }}">Give Feedback</a>
+                      {% endif %}
+                    </div>
+                  {% endif %}
+                </div>
+              </article>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="empty">You have not booked any trip yet.</p>
+        {% endif %}
+      </section>
+    {% endif %}
+  </main>
+  <script src="{{ url_for('static', filename='profile.js') }}"></script>
+  <script src="{{ url_for('static', filename='mobile-app.js') }}"></script>
+</body>
+</html>

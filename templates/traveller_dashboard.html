@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b3c5d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Travista">
+  <title>Travista | Traveller Dashboard</title>
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
+  <link rel="icon" href="{{ url_for('static', filename='icons/app-icon.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='profile.css') }}" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="{{ url_for('home') }}">Travista</a>
+    <nav class="top-actions">
+      <a href="{{ url_for('home') }}">Home</a>
+      <a href="{{ url_for('profile') }}">Profile</a>
+      <a href="{{ url_for('logout') }}">Logout</a>
+    </nav>
+  </header>
+
+  <main class="profile-shell">
+    <section class="traveller-dashboard">
+      <article class="journey-hero">
+        <div>
+          <p class="journey-kicker">Traveller Dashboard</p>
+          <h2>Know Your Travel Journey</h2>
+          <p class="journey-copy">See how often you travel, which side of India you cover the most, and where your next journey should take you.</p>
+        </div>
+        <div class="journey-badge">
+          <strong>{{ profile_stats.total }}</strong>
+          <span>Total journeys</span>
+        </div>
+      </article>
+
+      <article class="panel insight-panel traveller-featured-panel">
+        <div class="panel-head traveller-panel-head">
+          <h2>Travel Rhythm</h2>
+          <span>Trips by start date</span>
+        </div>
+        <div class="insight-grid">
+          <div class="insight-card">
+            <h3>{{ traveller_dashboard.weekly_trip_count }}</h3>
+            <p>Trips this week</p>
+          </div>
+          <div class="insight-card">
+            <h3>{{ traveller_dashboard.monthly_trip_count }}</h3>
+            <p>Trips this month</p>
+          </div>
+          <div class="insight-card">
+            <h3>{{ traveller_dashboard.top_region }}</h3>
+            <p>Most explored region{% if traveller_dashboard.top_region_count %} ({{ traveller_dashboard.top_region_count }} trips){% endif %}</p>
+          </div>
+        </div>
+        <div class="trend-grid">
+          <div class="trend-card">
+            <h3>Weekly Trend</h3>
+            <div class="mini-bars">
+              {% for item in traveller_dashboard.weekly_series %}
+                <article class="mini-bar-card">
+                  <div class="mini-bar-track">
+                    <span class="mini-bar-fill" style="height: {{ [item.value * 22, 10]|max }}px;"></span>
+                  </div>
+                  <strong>{{ item.value }}</strong>
+                  <p>{{ item.label }}</p>
+                </article>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="trend-card">
+            <h3>Monthly Trend</h3>
+            <div class="mini-bars">
+              {% for item in traveller_dashboard.monthly_series %}
+                <article class="mini-bar-card">
+                  <div class="mini-bar-track">
+                    <span class="mini-bar-fill accent" style="height: {{ [item.value * 18, 10]|max }}px;"></span>
+                  </div>
+                  <strong>{{ item.value }}</strong>
+                  <p>{{ item.label }}</p>
+                </article>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="panel insight-panel traveller-featured-panel">
+        <div class="panel-head traveller-panel-head">
+          <h2>India Coverage</h2>
+          <span>North, West, East, South</span>
+        </div>
+        <div class="coverage-grid">
+          {% for item in traveller_dashboard.region_breakdown %}
+            <article class="coverage-card">
+              <div class="coverage-head">
+                <h3>{{ item.label }}</h3>
+                <strong>{{ item.value }}</strong>
+              </div>
+              <div class="coverage-track">
+                <span class="coverage-fill" style="width: {{ 0 if item.value == 0 else (100 if item.value * 20 > 100 else (8 if item.value * 20 < 8 else item.value * 20)) }}%;"></span>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+        <div class="recommend-grid">
+          <article class="recommend-card">
+            <h3>Not Experienced Yet</h3>
+            {% if traveller_dashboard.unexplored_regions %}
+              <p>{{ traveller_dashboard.unexplored_regions|join(", ") }}</p>
+            {% else %}
+              <p>You have explored all major regions in this dashboard.</p>
+            {% endif %}
+          </article>
+          <article class="recommend-card">
+            <h3>Explore Next</h3>
+            <p>{{ traveller_dashboard.suggested_regions|join(", ") }}</p>
+          </article>
+        </div>
+      </article>
+
+      <article class="panel insight-panel traveller-featured-panel">
+        <div class="panel-head traveller-panel-head">
+          <h2>Longest Trip</h2>
+          <span>Your longest journey so far</span>
+        </div>
+        {% if traveller_dashboard.longest_trip %}
+          <div class="longest-card">
+            <h3>{{ traveller_dashboard.longest_trip.name }}</h3>
+            <p>{{ traveller_dashboard.longest_trip.route }}</p>
+            <p>{{ traveller_dashboard.longest_trip.dates }}</p>
+            <strong>{{ traveller_dashboard.longest_trip.days }} days</strong>
+          </div>
+        {% else %}
+          <p class="empty">No completed trip duration available yet.</p>
+        {% endif %}
+      </article>
+    </section>
+
+  </main>
+  <script src="{{ url_for('static', filename='profile.js') }}"></script>
+  <script src="{{ url_for('static', filename='mobile-app.js') }}"></script>
+</body>
+</html>

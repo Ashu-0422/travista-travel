@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0b3c5d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Travista">
+  <title>Edit Itinerary | Travista</title>
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
+  <link rel="icon" href="{{ url_for('static', filename='icons/app-icon.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{url_for('static', filename='operator.css')}}">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="{{ url_for('operator_dashboard') }}">Travista Operator</a>
+    <nav class="actions">
+      <a href="{{ url_for('operator_dashboard') }}">Dashboard</a>
+      <a class="profile-badge" href="{{ url_for('profile') }}">{{ (user.name or user.username or "U")[:1]|upper }}</a>
+    </nav>
+  </header>
+
+  <div class="card">
+    <h1>Edit Itinerary</h1>
+    <p class="subtitle">Update day-wise plan for {{ trip.tripname }}</p>
+
+    <div class="operator-profile">
+      <p><strong>Trip:</strong> {{ trip.tripname }}</p>
+      <p><strong>Route:</strong> {{ trip.sourcee }} → {{ trip.destination }}</p>
+      <p><strong>Dates:</strong> {{ trip.sourcedate }} to {{ trip.destinationdate }}</p>
+      <p><strong>Days:</strong> {{ trip.trip_days }}</p>
+    </div>
+
+    <form id="operatorEditForm" method="POST" enctype="multipart/form-data">
+      <div class="itinerary-box">
+        <h2>Trip Itinerary Details</h2>
+
+        <div class="row">
+          <label>Source location</label>
+          <select name="sourcee" id="sourcee" required>
+            <option value="">Select Source City</option>
+            {% for city in cities %}
+              <option value="{{ city }}" {% if trip.sourcee == city %}selected{% endif %}>{{ city }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="row">
+          <label>Destination location</label>
+          <select name="destination" id="destination" required>
+            <option value="">Select Destination City</option>
+            {% for city in cities %}
+              <option value="{{ city }}" {% if trip.destination == city %}selected{% endif %}>{{ city }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="row">
+          <label>Source date</label>
+          <input type="date" name="sourcedate" id="traveldate" value="{{ trip.sourcedate }}" readonly required>
+        </div>
+
+        <div class="row">
+          <label>Destination date</label>
+          <input type="date" name="destinationdate" id="traveldatee" value="{{ trip.destinationdate }}" readonly required>
+        </div>
+
+        <div class="row">
+          <label>Price per person</label>
+          <input type="number" name="price" value="{{ trip.price }}" min="1000" required>
+        </div>
+
+        <div class="row">
+          <label>Pickup Time</label>
+          <input
+            type="text"
+            id="pickupTimeText"
+            placeholder="hh:mm"
+            value="{{ pickup_time_text }}"
+            pattern="^(0?[1-9]|1[0-2]):[0-5][0-9]$"
+            title="Use 12-hour time format like 09:30"
+            required
+          >
+          <select id="pickupMeridiem" required>
+            <option value="AM" {% if pickup_meridiem == "AM" %}selected{% endif %}>AM</option>
+            <option value="PM" {% if pickup_meridiem == "PM" %}selected{% endif %}>PM</option>
+          </select>
+          <input type="hidden" name="pickup_time" id="pickupTimeValue">
+        </div>
+
+        <div class="row">
+          <label>PickUp location</label>
+          <input type="text" name="pickuploc" value="{{ trip.pickup_location }}" required>
+        </div>
+
+        <div class="row">
+          <label>Journey Start Date</label>
+          <input type="date" name="journey_start" id="journeyStartDate" value="{{ trip.journey_start or trip.sourcedate }}" readonly required>
+        </div>
+
+        <div class="row">
+          <label>Mode of Travel</label>
+          <select name="travel_mode" required>
+            <option value="">Select Mode</option>
+            <option {% if trip.travel_mode == "Flight" %}selected{% endif %}>Flight</option>
+            <option {% if trip.travel_mode == "Train" %}selected{% endif %}>Train</option>
+            <option {% if trip.travel_mode == "Bus" %}selected{% endif %}>Bus</option>
+            <option {% if trip.travel_mode == "Private Cab" %}selected{% endif %}>Private Cab</option>
+          </select>
+        </div>
+
+        <div class="row">
+          <label>Travel Mode Details</label>
+          <input type="text" name="travel_d" value="{{ trip.travel_details }}" required>
+        </div>
+
+        <div class="row">
+          <label>Destination Overview</label>
+          <input type="text" name="destination_overview" value="{{ trip.destination_overview }}" required>
+        </div>
+
+        <div class="row">
+          <label>Hotel Stay Details</label>
+          <input type="text" name="hotel_details" value="{{ trip.hotel_details }}" required>
+        </div>
+
+        <div class="row">
+          <label>Places to Visit</label>
+          <textarea name="places_visit" rows="3" required>{{ trip.places_visit }}</textarea>
+        </div>
+
+        <div class="row">
+          <label>Amenities & Facilities</label>
+          <textarea name="amenities" rows="2" required>{{ trip.amenities }}</textarea>
+        </div>
+
+        <div id="errorMsg" class="error"></div>
+
+        <hr class="divider">
+        <h3 class="img-title">Day-wise Details</h3>
+        <div class="day-details">
+          {% for day in day_view %}
+            <div class="day-card">
+              <h4>Day {{ day.day_no }} - {{ day.day_date }}</h4>
+              <div class="row">
+                <label>Date</label>
+                <input type="date" name="day_{{ day.day_no }}_date" value="{{ day.day_date }}" readonly required>
+              </div>
+              <div class="row">
+                <label>Place / Location</label>
+                <input type="text" name="day_{{ day.day_no }}_place" value="{{ day.place }}" required>
+              </div>
+              <div class="row">
+                <label>Time</label>
+                <input
+                  type="text"
+                  class="day-time-text"
+                  placeholder="hh:mm"
+                  value="{{ day.time_text }}"
+                  pattern="^(0?[1-9]|1[0-2]):[0-5][0-9]$"
+                  title="Use 12-hour time format like 09:30"
+                  required
+                >
+                <select class="day-time-meridiem" required>
+                  <option value="AM" {% if day.time_meridiem == "AM" %}selected{% endif %}>AM</option>
+                  <option value="PM" {% if day.time_meridiem == "PM" %}selected{% endif %}>PM</option>
+                </select>
+                <input type="hidden" name="day_{{ day.day_no }}_time" class="day-time-hidden">
+              </div>
+              <div class="row">
+                <label>Plan / Details</label>
+                <textarea name="day_{{ day.day_no }}_plan" rows="2" required>{{ day.tplan }}</textarea>
+              </div>
+              {% if day.images %}
+                <div class="row">
+                  <label>Existing Images</label>
+                  <div class="preview-grid">
+                    {% for img in day.images %}
+                      <img src="{{ url_for('static', filename='uploads/' + img) }}" alt="Day {{ day.day_no }} image">
+                    {% endfor %}
+                  </div>
+                </div>
+              {% endif %}
+              <div class="row">
+                <label>Update Images (optional)</label>
+                <input type="file" name="day_{{ day.day_no }}_image" accept="image/*" multiple>
+                <div class="preview-grid" data-preview-for="day_{{ day.day_no }}"></div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <button type="submit">Update Itinerary</button>
+    </form>
+  </div>
+
+  <script src="{{url_for('static', filename='operator_edit.js')}}"></script>
+  <script src="{{ url_for('static', filename='mobile-app.js') }}"></script>
+</body>
+</html>

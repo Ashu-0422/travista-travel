@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0b3c5d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Travista">
+  <title>Travista</title>
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
+  <link rel="icon" href="{{ url_for('static', filename='icons/app-icon.svg') }}" type="image/svg+xml">
+
+  <!-- Google Font (Italic & Classy) -->
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="{{url_for('static',filename='index.css')}}">
+</head>
+<body>
+  <div class="video-stage" aria-hidden="true">
+    <video class="bg-video is-active" autoplay muted loop playsinline preload="auto" data-color="#cfe9ff" data-glow="rgba(170, 220, 255, 0.65)">
+      <source src="{{ url_for('static', filename='videos/334716_medium.mp4') }}" type="video/mp4">
+    </video>
+    <video class="bg-video" autoplay muted loop playsinline preload="auto" data-color="#ffe2c6" data-glow="rgba(255, 198, 150, 0.6)">
+      <source src="{{ url_for('static', filename='videos/172591-847860519_small.mp4') }}" type="video/mp4">
+    </video>
+    <video class="bg-video" autoplay muted loop playsinline preload="auto" data-color="#d7fff3" data-glow="rgba(160, 255, 228, 0.6)">
+      <source src="{{ url_for('static', filename='videos/4685716-hd_1920_1080_30fps.mp4') }}" type="video/mp4">
+    </video>
+    <video class="bg-video" autoplay muted loop playsinline preload="auto" data-color="#f7d7b7" data-glow="rgba(255, 206, 158, 0.6)">
+      <source src="{{ url_for('static', filename='videos/12286351_1920_1080_30fps.mp4') }}" type="video/mp4">
+    </video>
+    <video class="bg-video" autoplay muted loop playsinline preload="auto" data-color="#f3f6ff" data-glow="rgba(205, 216, 255, 0.7)">
+      <source src="{{ url_for('static', filename='videos/19717370-uhd_3840_2160_30fps.mp4') }}" type="video/mp4">
+    </video>
+    <video class="bg-video" autoplay muted loop playsinline preload="auto" data-color="#f5f0ff" data-glow="rgba(210, 196, 255, 0.7)">
+      <source src="{{ url_for('static', filename='videos/istockphoto-2152748220-640_adpp_is.mp4') }}" type="video/mp4">
+    </video>
+    <video class="bg-video" autoplay muted loop playsinline preload="auto" data-color="#ffe9d2" data-glow="rgba(255, 220, 185, 0.6)">
+      <source src="{{ url_for('static', filename='videos/istockphoto-2207489415-640_adpp_is.mp4') }}" type="video/mp4">
+    </video>
+    <div class="video-overlay"></div>
+  </div>
+
+  <div class="landing">
+    <h1 class="brand">Travista</h1>
+    <p class="tagline">Flow into unforgettable journeys</p>
+  </div>
+
+  <script>
+    // Redirect to login page only on user interaction
+    const goToLogin = () => {
+      window.location.href = "{{url_for('login')}}";
+    };
+    document.addEventListener('click', goToLogin, { once: true });
+    document.addEventListener('keydown', goToLogin, { once: true });
+
+    // Rotate background videos every 7 seconds and sync brand color
+    const videos = Array.from(document.querySelectorAll('.bg-video'));
+    const root = document.documentElement;
+    const rotationMs = 7000;
+    let activeIndex = 0;
+
+    const applyBrandColor = (videoEl) => {
+      const color = videoEl.dataset.color || '#eafcff';
+      const glow = videoEl.dataset.glow || 'rgba(255,255,255,0.55)';
+      root.style.setProperty('--brand-color', color);
+      root.style.setProperty('--brand-glow', glow);
+    };
+
+    applyBrandColor(videos[0]);
+
+    setInterval(() => {
+      if (videos.length < 2) return;
+      const current = videos[activeIndex];
+      activeIndex = (activeIndex + 1) % videos.length;
+      const next = videos[activeIndex];
+      next.currentTime = 0;
+      next.play().catch(() => {});
+      next.classList.add('is-active');
+      applyBrandColor(next);
+
+      window.setTimeout(() => {
+        current.classList.remove('is-active');
+        current.pause();
+        current.currentTime = 0;
+      }, 300);
+    }, rotationMs);
+  </script>
+  <script src="{{ url_for('static', filename='mobile-app.js') }}"></script>
+
+</body>
+</html>

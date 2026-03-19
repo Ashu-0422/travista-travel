@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b3c5d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Travista">
+  <title>Operator Dashboard | Travista</title>
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
+  <link rel="icon" href="{{ url_for('static', filename='icons/app-icon.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='operator_dashboard.css') }}" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="{{ url_for('operator_dashboard') }}">Travista Operator</a>
+    <nav class="actions">
+      <a href="{{ url_for('operator') }}" class="add-btn">Add New Trip</a>
+      <a class="profile-badge" href="{{ url_for('profile') }}">{{ (user.name or user.username or "U")[:1]|upper }}</a>
+      <a href="{{ url_for('logout') }}">Logout</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="profile-card">
+      <div class="avatar">{{ (user.username or "U")[:1]|upper }}</div>
+      <div>
+        <h1>{{ user.name }}</h1>
+        <p>{{ user.username }} | {{ user.email }}</p>
+        <p>{{ user.city }}, {{ user.state }} | +91 {{ user.phone }}</p>
+      </div>
+    </section>
+
+    <section class="stats">
+      <article>
+        <h2>{{ stats.total }}</h2>
+        <p>Total Trips Added</p>
+      </article>
+      <article>
+        <h2>{{ stats.completed }}</h2>
+        <p>Completed Trips</p>
+      </article>
+      <article>
+        <h2>{{ stats.upcoming }}</h2>
+        <p>Upcoming Trips</p>
+      </article>
+    </section>
+
+    <section class="trip-panel">
+      <div class="panel-head">
+        <h2>Your Trip Details</h2>
+        <a href="{{ url_for('operator') }}" class="add-btn">+ Add Trip</a>
+      </div>
+      {% if trips %}
+        <div class="trip-list">
+          {% for trip in trips %}
+            <article class="trip-card">
+              <div>
+                <h3>{{ trip.tripname }}</h3>
+                <p>{{ trip.sourcee }} -> {{ trip.destination }}</p>
+              </div>
+              <div>
+                <p>{{ trip.sourcedate }} to {{ trip.destinationdate }}</p>
+                <p>Rs. {{ trip.price }} | {{ trip.trip_days }} days | Max {{ trip.maximumpeople }} people</p>
+                <div class="trip-actions">
+                  <a class="edit-btn" href="{{ url_for('operator_edit_trip', trip_id=trip.id) }}">Edit Itinerary</a>
+                  <form class="cancel-form" method="POST" action="{{ url_for('operator_cancel_trip', trip_id=trip.id) }}" onsubmit="return confirm('Cancel this trip? This will remove it for all travellers.');">
+                    <button type="submit" class="cancel-btn">Cancel Trip</button>
+                  </form>
+                </div>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="empty">No trips added yet. Click "Add New Trip" to create your first package.</p>
+      {% endif %}
+    </section>
+
+    <section class="dashboard-overview dashboard-shell">
+      <section class="dashboard-controls dashboard-controls-top">
+        <label class="control-field control-field-wide">
+          <span>All trips</span>
+          <select id="tripSlicer">
+            <option value="all">All Trips</option>
+          </select>
+        </label>
+      </section>
+
+      <div class="panel-head dashboard-head">
+        <div>
+          <p class="eyebrow">Insight Dashboard</p>
+          <h2>Trip Performance And Customer Behaviour</h2>
+        </div>
+        <p class="refresh-note">Precomputed analytics from Python backend</p>
+      </div>
+
+      <section class="dashboard-controls">
+        <label class="control-field">
+          <span>Revenue view</span>
+          <select id="revenueView">
+            <option value="weekly">Weekly revenue</option>
+            <option value="monthly">Monthly revenue</option>
+          </select>
+        </label>
+      </section>
+
+      <section class="metric-cards">
+        <article class="metric-card">
+          <p class="metric-label">Selected Trips</p>
+          <h3 id="metricTrips">0</h3>
+        </article>
+        <article class="metric-card">
+          <p class="metric-label">Bookings</p>
+          <h3 id="metricBookings">0</h3>
+        </article>
+        <article class="metric-card">
+          <p class="metric-label">Travellers</p>
+          <h3 id="metricTravelers">0</h3>
+        </article>
+        <article class="metric-card">
+          <p class="metric-label">Revenue</p>
+          <h3 id="metricRevenue">Rs. 0</h3>
+        </article>
+      </section>
+
+      <section class="insight-grid">
+        <article class="insight-card standout-card">
+          <p class="metric-label">Top Customer For Selection</p>
+          <h3 id="topCustomerName">No bookings yet</h3>
+          <p id="topCustomerMeta">Waiting for bookings</p>
+          <p id="topCustomerRevenue">Revenue contribution: Rs. 0</p>
+        </article>
+        <article class="insight-card">
+          <p class="metric-label">Average Travellers Per Customer</p>
+          <h3 id="avgTravelers">0</h3>
+          <p>Helps identify family or group booking behaviour.</p>
+        </article>
+        <article class="insight-card">
+          <p class="metric-label">Repeat Customers</p>
+          <h3 id="repeatCustomers">0</h3>
+          <p id="singleCustomers">Single-booking customers: 0</p>
+        </article>
+      </section>
+
+      <section class="chart-grid">
+        <article class="chart-card">
+          <div class="chart-head">
+            <h3>Bookings And Revenue Snapshot</h3>
+            <p>Selected trip versus operator totals</p>
+          </div>
+          <canvas id="overviewChart"></canvas>
+        </article>
+
+        <article class="chart-card">
+          <div class="chart-head">
+            <h3 id="revenueChartTitle">Weekly Revenue</h3>
+            <p>Switch the selector to compare weekly or monthly revenue.</p>
+          </div>
+          <canvas id="revenueChart"></canvas>
+        </article>
+      </section>
+
+        <section class="chart-grid secondary-charts">
+          <article class="chart-card">
+            <div class="chart-head">
+              <h3>Revenue By Trip</h3>
+              <p>See which packages are contributing the most revenue</p>
+            </div>
+            <canvas id="tripRevenueChart"></canvas>
+          </article>
+
+          <article class="chart-card">
+          <div class="chart-head">
+            <h3>Payment Behaviour</h3>
+            <p>How customers prefer to pay</p>
+          </div>
+          <canvas id="paymentModeChart"></canvas>
+        </article>
+      </section>
+
+      <section class="customer-board">
+        <div class="chart-head">
+          <h3>Customer Behaviour Dashboard</h3>
+          <p>Top travellers and repeat-booking signals across your trips</p>
+        </div>
+        <div class="table-shell">
+          <table>
+            <thead>
+              <tr>
+                <th>Customer</th>
+                <th>Bookings</th>
+                <th>Travellers</th>
+                <th>Revenue</th>
+              </tr>
+            </thead>
+            <tbody id="topCustomersTable">
+              <tr>
+                <td colspan="4">Loading customer analytics...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <p class="dashboard-status" id="dashboardStatus">Loading dashboard data...</p>
+    </section>
+  </main>
+  <script id="dashboardModel" type="application/json">{{ dashboard_model|tojson }}</script>
+  <script src="{{ url_for('static', filename='operator_dashboard.js') }}"></script>
+  <script src="{{ url_for('static', filename='mobile-app.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,155 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Travel Home</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b3c5d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Travista">
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
+  <link rel="icon" href="{{ url_for('static', filename='icons/app-icon.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{url_for('static',filename='home.css')}}">
+</head>
+<body>
+{% macro trip_card(trip, order=0) -%}
+  <article class="itinerary-card" data-price="{{ trip.price or 0 }}" data-order="{{ order }}">
+    <a class="card-stretch-link" href="{{ url_for('package_detail', trip_id=trip.id) }}" aria-label="Open itinerary for {{ trip.tripname or 'Travel Package' }}"></a>
+    <img
+      class="itinerary-image"
+      src="{{ url_for('static', filename='uploads/' + trip.cover_image) if trip.cover_image else 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e' }}"
+      alt="Trip image"
+    />
+    <div class="itinerary-content">
+      <div class="itinerary-header">
+        <h3>{{ trip.tripname or "Travel Package" }}</h3>
+        <div class="price-block">
+          <div class="price">&#8377;{{ trip.price }}</div>
+          <div class="operator-swipe" data-home-swipe aria-expanded="false">
+            <div class="operator-swipe__track">
+              <span>Swipe for Operator</span>
+              <div class="operator-swipe__thumb"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="meta-row">{{ trip.sourcee }} &rarr; {{ trip.destination }}</p>
+      {% if current_role == "traveller" %}
+      <div class="trip-badges">
+        <span>{{ trip.traveler_count or 0 }} travellers</span>
+        <span>{{ trip.booking_count or 0 }} bookings</span>
+        {% if trip.trip_region %}
+        <span>{{ trip.trip_region }}</span>
+        {% endif %}
+      </div>
+      {% endif %}
+      <div class="operator-panel" data-home-operator>
+        <p><strong>Name:</strong> {{ trip.name or "-" }}</p>
+        <p><strong>Email:</strong> {{ trip.email or "-" }}</p>
+        <p><strong>Phone:</strong> {{ trip.tel or "-" }}</p>
+      </div>
+      <a class="view-btn" href="{{ url_for('package_detail', trip_id=trip.id) }}">View Itinerary</a>
+    </div>
+  </article>
+{%- endmacro %}
+
+<nav>
+  <div class="logo">Travista ✈️</div>
+
+  <div class="nav-center">
+    <input type="text" placeholder="Search destination  "/>
+    <select id="sortSelect" aria-label="Sort trips by price">
+      <option value="" selected>Sort by Price</option>
+      <option value="low-to-high">Low to High</option>
+      <option value="high-to-low">High to Low</option>
+    </select>
+  </div>
+
+  <a href="{{ url_for('user_dashboard') }}" class="dashboard-link">Dashboard</a>
+  {% if current_role == "traveller" %}
+  <a href="{{ url_for('preference') }}" class="dashboard-link">Set Preference</a>
+  {% endif %}
+  <a href="{{ url_for('profile') }}" class="profile">{{ avatar_letter }}</a>
+</nav>
+
+<section class="hero">
+  <h1>Explore the World</h1>
+  <p>Best travel packages for your next trip</p>
+</section>
+
+<section class="options" id="home">
+  {% if current_role == "traveller" and not has_preference %}
+    <p class="pref-note">
+      <span class="pref-note__icon" aria-hidden="true">✨</span>
+      <strong>Want better matches?</strong> Set your preferences to see trips picked just for you. For now, you're seeing all available packages.
+    </p>
+  {% endif %}
+
+  {% if current_role == "traveller" %}
+    {% if is_new_traveller %}
+      <section class="trip-section">
+        <div class="trip-section-head">
+          <div>
+            <p class="trip-section-kicker">New Traveller</p>
+            <h2>Set preference and get your destination where your heart melts</h2>
+          </div>
+        </div>
+      </section>
+    {% elif recommended_trips %}
+      <section class="trip-section">
+        <div class="trip-section-head">
+          <div>
+            <p class="trip-section-kicker">Behavioural Machine Learning</p>
+            <h2>Predicted From Your Travel Behaviour</h2>
+          </div>
+        </div>
+        <div class="featured-trip-grid">
+          {% for trip in recommended_trips %}
+            {{ trip_card(trip, loop.index0) }}
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+  {% endif %}
+
+  <div class="category-grid">
+    <div class="category-card" id="travelToggle">
+      <img src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee" alt="Travel Packages" />
+      <div class="category-body">
+        <h3>Travel Packages</h3>
+        <p>Customized holiday packages</p>
+      </div>
+    </div>
+  </div>
+
+  <h2 id="sectionTitle" class="section-title">Travel Packages</h2>
+  <div id="travelList" class="trip-list">
+    {% if trips %}
+      {% for trip in trips %}
+        {{ trip_card(trip, loop.index0) }}
+      {% endfor %}
+    {% else %}
+      {% if current_role == "traveller" and has_preference %}
+        <p class="empty-msg">No such trip till now.</p>
+      {% else %}
+        <div class="itinerary-card">
+          <img class="itinerary-image" src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee" alt="Travel package" />
+          <div class="itinerary-content">
+            <div class="itinerary-header">
+              <h3>Travel Package</h3>
+              <div class="price">Starting &#8377;25,000</div>
+            </div>
+            <p class="meta-row">Your next destination</p>
+            <a class="view-btn" href="#">View Itinerary</a>
+          </div>
+        </div>
+      {% endif %}
+    {% endif %}
+  </div>
+</section>
+
+<script src="{{url_for('static', filename='home.js')}}"></script>
+<script src="{{ url_for('static', filename='mobile-app.js') }}"></script>
+
+</body>
+</html>

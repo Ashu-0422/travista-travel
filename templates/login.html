@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0b3c5d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Travista">
+  <title>Travista | Login</title>
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
+  <link rel="icon" href="{{ url_for('static', filename='icons/app-icon.svg') }}" type="image/svg+xml">
+
+  <!-- Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="{{url_for('static', filename='login.css')}}">
+</head>
+<body>
+
+  <div class="login-container">
+    <h1 class="brand">Travista</h1>
+    <p class="tagline">Welcome back 😉</p>
+
+    <form class="login-form" action="/login" method="post">
+      <label for="username">Username</label>
+      <input type="text" id="username" name="username" required 
+      pattern="^[A-Za-z][A-Za-z0-9_]{4,14}$"
+      title="Username must start with a letter, No special characters and be 5–15 characters">
+
+    <div class="password-box">
+       <label for="password">Password</label>
+       <input type="password" id="password" name="password" required
+        pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#]).+$"
+        title="Password must contain uppercase, lowercase, number and special character">
+        <button type="button" class="toggle" onclick="togglePassword()">Show</button>
+    </div>
+
+      <button type="submit">Login</button>
+      <p id="errorMsg" class="form-error" role="alert">{{ error or "" }}</p>
+    </form>
+
+    <p class="register-text">
+      Don’t have an account?
+      <a href="{{url_for('regi')}}">Register</a>
+    </p>
+  </div>
+
+ <script src="{{url_for('static', filename='login.js')}}"></script>
+ <script src="{{ url_for('static', filename='mobile-app.js') }}"></script>
+
+</body>
+</html>

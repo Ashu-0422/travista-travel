@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0b3c5d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Travista">
+  <title>Travista - Operator Form</title>
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
+  <link rel="icon" href="{{ url_for('static', filename='icons/app-icon.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{url_for('static', filename='operator.css')}}">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="{{ url_for('operator_dashboard') }}">Travista Operator</a>
+    <nav class="actions">
+      <a href="{{ url_for('operator_dashboard') }}">Dashboard</a>
+      <a class="profile-badge" href="{{ url_for('profile') }}">{{ operator_user.name[:1].upper() }}</a>
+    </nav>
+  </header>
+
+  <div class="card">
+    <h1>Travista</h1>
+    <p class="subtitle">Set trip details (Operator)</p>
+    <div class="operator-profile">
+      <p><strong>Name:</strong> {{ operator_user.name }}</p>
+      <p><strong>Username:</strong> {{ operator_user.username }}</p>
+      <p><strong>Email:</strong> {{ operator_user.email }}</p>
+      <p><strong>Phone:</strong> {{ operator_user.phone }}</p>
+    </div>
+
+    <form id="operatorForm" method="POST" enctype="multipart/form-data">
+
+      <div class="col">
+         <label for="Operator">Operator Name</label>
+         <input type="text" name="name" value="{{ operator_user.name }}" readonly required>
+      </div>
+
+      <div class="col">
+          <label for="age">Age</label>
+          <input type="number" name="age" value="{{ operator_user.age }}" readonly required>
+      </div>
+
+      <div class="col">
+        <label for="Contact">Contact</label>
+       <input type="tel"name="tel" value="{{ operator_user.phone }}" readonly required>
+      </div>
+
+      <div class="col">
+        <label for="email">Email</label>
+          <input type="email"name="email" value="{{ operator_user.email }}" readonly required>
+      </div>
+
+      <div class="col">
+         <label for="trip">Trip Name</label>
+         <input type="text" name="tripname" placeholder="Trip Name" required>
+     </div>
+
+      <div class="col">
+      <label for="price">Price per person</label>
+      <input type="number" id="price" name="price" placeholder="Price per person" min="1000" required>
+      <div id="errorMsg" class="error"></div>
+    </div>
+
+    <div class="col">
+      <label for="Soucre">Source location</label>
+      <select name="sourcee" id="sourcee" required>
+        <option value="">Select Source City</option>
+        {% for city in cities %}
+          <option value="{{ city }}">{{ city }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col">
+      <label for="Destination">Destination Loction</label>
+      <select name="destination" id="destination" required>
+        <option value="">Select Destination City</option>
+        {% for city in cities %}
+          <option value="{{ city }}">{{ city }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col">
+      <label for="date">Source date</label>
+      <input type="date" name="sourcedate" id="traveldate" required>
+    </div>
+
+    <div class="col">
+      <label for="date">Destination date</label>
+      <input type="date" name="destinationdate" id="traveldatee"  required>
+    </div>
+
+    <div class="col">
+      <label for="maximum ">Maximum People</label>
+      <input type="number" name="maximumpeople" placeholder="Maximum People" min="1" max="500" required><br><br>
+    </div>
+
+      <div class="col">
+      <label for="tripDays">Days</label>
+      <input type="number" id="tripDays" name="days" placeholder="days" readonly required><br><br>
+    </div>
+         
+      <div class="itinerary-box">
+
+         <h2>Trip Itinerary Details</h2>
+
+            <div class="row">
+              <label>Pickup Time</label>
+                <input
+                  type="text"
+                  id="pickupTimeText"
+                  placeholder="hh:mm"
+                  pattern="^(0?[1-9]|1[0-2]):[0-5][0-9]$"
+                  title="Use 12-hour time format like 09:30"
+                  required
+                >
+                <select id="pickupMeridiem" required>
+                  <option value="AM">AM</option>
+                  <option value="PM">PM</option>
+                </select>
+                <input type="hidden" name="pickup_time" id="pickupTimeValue">
+             </div>
+
+              <div class="row">
+               <label>PickUp location</label>
+               <input type="text" id="pickup" name="pickuploc" required>
+            </div>
+
+            <div class="row">
+               <label>Journey Start Date</label>
+               <input type="date" id="journeyStartDate" name="journey_start" readonly required>
+            </div>
+
+            <div class="row">
+              <label>Mode of Travel</label>
+               <select name="travel_mode" required>
+                     <option value="">Select Mode</option>
+                     <option>Flight</option>
+                     <option>Train</option>
+                     <option>Bus</option>
+                    <option>Private Cab</option>
+               </select>
+            </div>
+
+             <div class="row">
+               <label>Travel Mode Details</label>
+               <input type="text" id="travel_d" name="travel_d" required>
+            </div>
+
+           <div class="row">
+                <label>Destination Overview</label>
+                <input type="text" name="destination_overview" placeholder="Example: Rome city exploration" required>
+           </div>
+
+           <div class="row">
+             <label>Hotel Stay Details</label><br>
+               <div class="hotel">
+                <div class="hol">
+                  <label>Hotel name</label>
+                  <input  type="text" name="hotel_details" required>
+                 </div>
+
+                <div class="hol">
+                   <label>Hotel address</label>
+                  <input  type="text" name="hotel_address" required>
+                </div> 
+
+                <div class="hol">
+                   <label>Hotel url</label>
+                  <input  type="url" name="hotel_url" required>
+                </div> 
+              </div>
+          </div>
+
+          <div class="row">
+              <label>Places to Visit</label>
+             <textarea name="places_visit" rows="3" placeholder="Colosseum, Vatican City, Trevi Fountain..." required></textarea>
+         </div>
+
+         <div class="row">
+                <label>Amenities & Facilities</label>
+              <textarea name="amenities" rows="2" placeholder="Breakfast included, Free WiFi, AC Bus..." required></textarea>
+         </div>
+
+         <hr class="divider">
+            <h3 class="img-title">Day-wise Details</h3>
+            <div id="dayDetails" class="day-details"></div>
+
+         <hr class="divider">
+            <h3 class="img-title">Trip Images</h3>
+
+             <div class="row">
+                <label>Trip Cover Image (Front Page)</label>
+               <input type="file" name="cover_image" id="coverImageInput" accept="image/*" multiple required><br>
+                <div id="previewCoverImage" class="preview-grid"></div>
+            </div>
+
+           <div class="row">
+              <label>Hotel Stay Image</label>
+              <input type="file" name="hotel_image" id="hotelImageInput" accept="image/*" multiple required>
+              <div id="previewHotelImage" class="preview-grid"></div>
+           </div>
+
+           <div class="row">
+              <label>Destination Image</label>
+              <input type="file" name="place_image" id="placeImageInput" accept="image/*" multiple required>
+              <div id="previewPlaceImage" class="preview-grid"></div>
+           </div>
+      </div>
+
+      <button type="submit">Submit Trip</button>
+
+    </form>
+  </div>
+
+  <script src="{{url_for('static', filename='operator.js')}}"></script>
+  <script src="{{ url_for('static', filename='mobile-app.js') }}"></script>
+</body>
+</html>
+

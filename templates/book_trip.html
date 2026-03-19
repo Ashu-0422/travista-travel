@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b3c5d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Travista">
+  <title>Book {{ trip.tripname or "Trip" }}</title>
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
+  <link rel="icon" href="{{ url_for('static', filename='icons/app-icon.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='book_trip.css') }}" />
+</head>
+<body>
+  {% if show_booking_popup %}
+    <div class="success-modal" id="bookingSuccessModal">
+      <div class="success-modal__card">
+        <h2>🎉Your Trip is Booked🎉</h2>
+        <p>Pack your bag get ready🎒</p>
+        <button type="button" id="bookingSuccessOk">Ok</button>
+      </div>
+    </div>
+  {% endif %}
+
+  <nav>
+    <div class="logo">Travista</div>
+    <a href="{{ url_for('profile') }}" class="back-link">Profile</a>
+    <a href="{{ url_for('home') }}" class="back-link">Back to Home</a>
+  </nav>
+
+  <main class="page">
+    <section class="trip-card">
+      <img
+        class="trip-image"
+        src="{{ url_for('static', filename='uploads/' + trip.cover_image) if trip.cover_image else 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e' }}"
+        alt="Trip image"
+      />
+      <div class="trip-info">
+        <div class="head">
+          <h1>{{ trip.tripname or "Travel Package" }}</h1>
+          <div class="price">&#8377;{{ trip.price }}</div>
+        </div>
+        <p class="meta">{{ trip.sourcee }} &rarr; {{ trip.destination }} | {{ trip.trip_days }} days | {{ trip.travel_mode or "Travel" }}</p>
+        <p><strong>Journey Start:</strong> {{ trip.journey_start or "-" }}</p>
+        <p><strong>Places:</strong> {{ trip.places_visit or "-" }}</p>
+        <p><strong>Amenities:</strong> {{ trip.amenities or "-" }}</p>
+        <p class="overview">{{ trip.destination_overview or "No overview available." }}</p>
+      </div>
+    </section>
+
+    {% if booked %}
+      <section class="confirm-box">
+        <h2>Booking Confirmed</h2>
+        {% if booking_message %}
+        <p><strong>{{ booking_message }}</strong></p>
+        {% endif %}
+        <p><strong>Reference:</strong> {{ booking.booking_ref }}</p>
+        <p><strong>Name:</strong> {{ booking.full_name }}</p>
+        <p><strong>Email:</strong> {{ booking.email }}</p>
+        <p><strong>Phone:</strong> {{ booking.phone }}</p>
+        <p><strong>Travelers:</strong> {{ booking.travelers }}</p>
+        <p><strong>Total Price:</strong> &#8377;{{ '%.2f'|format(booking.total_price or 0) }}</p>
+        <p><strong>Payment:</strong> {{ booking.payment_mode }}</p>
+        <a class="go-detail" href="{{ url_for('package_detail', trip_id=trip.id) }}">View Full Itinerary</a>
+        {% if can_chat %}
+        <a class="go-detail" href="{{ url_for('trip_chat', trip_id=trip.id) }}">Open Trip Group Chat</a>
+        {% endif %}
+      </section>
+    {% else %}
+      <section class="booking-layout">
+        <form method="POST" class="booking-form" id="bookingForm" data-price="{{ per_person_price or 0 }}">
+          <h2>Booking Options</h2>
+          {% if booking_error %}
+          <div class="form-error">{{ booking_error }}</div>
+          {% endif %}
+          <label>Full Name</label>
+          <input type="text" name="full_name" value="{{ booking.full_name or '' }}" required />
+
+          <label>Email</label>
+          <input type="email" name="email" value="{{ booking.email or '' }}" required />
+
+          <label>Phone</label>
+          <input type="tel" name="phone" value="{{ booking.phone or '' }}" required />
+
+          <label>Number of Travelers</label>
+          <input type="number" id="travelers" name="travelers" min="1" max="12" value="{{ booking.travelers or '1' }}" required />
+          <small class="field-hint">One account can book up to 12 travellers only.</small>
+
+          <div class="fare-summary" id="fareSummary">
+            <p><strong>Price / Traveler:</strong> <span id="pricePerTraveler">&#8377;{{ '%.2f'|format(per_person_price or 0) }}</span></p>
+            <p><strong>Total Travelers:</strong> <span id="totalTravelers">1</span></p>
+            <p><strong>Total Amount:</strong> <span id="totalAmount">&#8377;{{ '%.2f'|format(per_person_price or 0) }}</span></p>
+          </div>
+
+          <label>Payment Method</label>
+          <select name="payment_mode" id="paymentMode" required>
+            <option value="">Select Payment Mode</option>
+            <option value="UPI" {% if booking.payment_mode == 'UPI' %}selected{% endif %}>UPI</option>
+            <option value="Card" {% if booking.payment_mode == 'Card' %}selected{% endif %}>Card</option>
+            <option value="Net Banking" {% if booking.payment_mode == 'Net Banking' %}selected{% endif %}>Net Banking</option>
+            <option value="Cash" {% if booking.payment_mode == 'Cash' %}selected{% endif %}>Cash</option>
+          </select>
+
+          <div class="payment-fields" id="upiFields" hidden>
+            <label>UPI App</label>
+            <select name="upi_app" id="upiApp">
+              <option value="">Select UPI App</option>
+              <option value="GPay" {% if booking.upi_app == 'GPay' %}selected{% endif %}>GPay</option>
+              <option value="PhonePe" {% if booking.upi_app == 'PhonePe' %}selected{% endif %}>PhonePe</option>
+              <option value="Paytm" {% if booking.upi_app == 'Paytm' %}selected{% endif %}>Paytm</option>
+            </select>
+
+            <label>UPI ID</label>
+            <input type="text" name="upi_id" id="upiId" value="{{ booking.upi_id or '' }}" placeholder="example@okaxis" />
+          </div>
+
+          <div class="payment-fields" id="cardFields" hidden>
+            <label>Card Holder Name</label>
+            <input type="text" name="card_holder" id="cardHolder" value="{{ booking.card_holder or '' }}" placeholder="Name on card" />
+
+            <label>Card Number</label>
+            <input type="text" name="card_number" id="cardNumber" value="{{ booking.card_number or '' }}" inputmode="numeric" maxlength="19" placeholder="1234 5678 9012 3456" />
+
+            <div class="field-row">
+              <div>
+                <label>Expiry</label>
+                <input type="text" name="card_expiry" id="cardExpiry" value="{{ booking.card_expiry or '' }}" maxlength="5" placeholder="MM/YY" />
+              </div>
+              <div>
+                <label>CVV</label>
+                <input type="password" name="card_cvv" id="cardCvv" value="{{ booking.card_cvv or '' }}" inputmode="numeric" maxlength="3" placeholder="123" />
+              </div>
+            </div>
+          </div>
+
+          <div class="payment-fields" id="netBankingFields" hidden>
+            <label>Bank</label>
+            <select name="bank_name" id="bankName">
+              <option value="">Select Bank</option>
+              <option value="SBI" {% if booking.bank_name == 'SBI' %}selected{% endif %}>SBI</option>
+              <option value="HDFC" {% if booking.bank_name == 'HDFC' %}selected{% endif %}>HDFC</option>
+              <option value="ICICI" {% if booking.bank_name == 'ICICI' %}selected{% endif %}>ICICI</option>
+              <option value="Axis Bank" {% if booking.bank_name == 'Axis Bank' %}selected{% endif %}>Axis Bank</option>
+            </select>
+
+            <label>Account Number</label>
+            <input type="text" name="account_number" id="accountNumber" value="{{ booking.account_number or '' }}" inputmode="numeric" placeholder="Enter account number" />
+
+            <label>IFSC Code</label>
+            <input type="text" name="ifsc_code" id="ifscCode" value="{{ booking.ifsc_code or '' }}" maxlength="11" placeholder="SBIN0123456" />
+          </div>
+
+          <label>Special Notes</label>
+          <textarea name="special_notes" rows="4" placeholder="Any special request">{{ booking.special_notes or '' }}</textarea>
+
+          <button type="submit">Confirm Booking</button>
+        </form>
+
+        <div class="day-preview">
+          <h2>Trip Day Plan</h2>
+          {% if days %}
+            {% for day in days %}
+              <div class="day-item">
+                <h3>Day {{ day.day_no }} - {{ day.place or "Destination" }}</h3>
+                <p>{{ day.day_date or "-" }} | {{ day.time or "-" }}</p>
+                <p>{{ day.tplan or "No details available." }}</p>
+              </div>
+            {% endfor %}
+          {% else %}
+            <p class="empty">No day-wise itinerary available.</p>
+          {% endif %}
+        </div>
+      </section>
+    {% endif %}
+  </main>
+  <script src="{{ url_for('static', filename='book_trip.js') }}"></script>
+  <script src="{{ url_for('static', filename='mobile-app.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0b3c5d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Travista">
+  <title>Travista | Travel Preferences</title>
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
+  <link rel="icon" href="{{ url_for('static', filename='icons/app-icon.svg') }}" type="image/svg+xml">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='preference.css') }}">
+</head>
+<body>
+  <div class="preference-wrapper">
+    <a class="back-button" href="{{ url_for('home') }}">Back</a>
+    <h1 class="brand">Travista</h1>
+    <p class="tagline">Set your travel preferences</p>
+
+    <form class="preference-form" method="post" action="{{ url_for('preference') }}" novalidate>
+      <div class="row">
+        <label for="source">Source Location</label>
+        <select id="source" name="source">
+          <option value="">Select Source City</option>
+          {% for city in cities %}
+            <option value="{{ city }}" {% if preference.source == city %}selected{% endif %}>{{ city }}</option>
+          {% endfor %}
+        </select>
+
+        <label for="destination">Destination Location</label>
+        <select id="destination" name="destination">
+          <option value="">Select Destination City</option>
+          {% for city in cities %}
+            <option value="{{ city }}" {% if preference.destination == city %}selected{% endif %}>{{ city }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="row">
+        <label for="traveldate">Date</label>
+        <input type="date" id="traveldate" name="traveldate" value="{{ preference.traveldate or '' }}">
+
+        <label for="days">Number of Days</label>
+        <input type="number" id="days" name="days" placeholder="Number of Days" min="1" value="{{ preference.days or '' }}">
+      </div>
+
+      <p id="errorMsg"></p>
+
+      <div class="row">
+        <label for="budget">Budget</label>
+        <input type="number" id="budget" name="budget" placeholder="Budget (INR)" min="2000" value="{{ preference.budget or '' }}">
+
+        <label for="people">Number of people</label>
+        <input type="number" id="people" name="people" placeholder="Number of people" min="1" value="{{ preference.people or '' }}">
+      </div>
+
+      <div class="slider-box">
+        <label>Preferred Travel Agent Rating</label>
+        <input type="range" min="1" max="5" step="1" value="{{ preference.rating or 3 }}" id="rating" name="rating">
+        <div class="rating-value">
+          Rating: <span id="ratingValue">{{ preference.rating or 3 }}</span> *
+        </div>
+      </div>
+
+      <button type="submit">Save Preference</button>
+    </form>
+  </div>
+
+  <script src="{{ url_for('static', filename='preference.js') }}"></script>
+  <script src="{{ url_for('static', filename='mobile-app.js') }}"></script>
+</body>
+</html>

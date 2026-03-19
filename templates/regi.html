@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0b3c5d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Travista">
+  <title>Travista | Register</title>
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
+  <link rel="icon" href="{{ url_for('static', filename='icons/app-icon.svg') }}" type="image/svg+xml">
+
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='regi.css') }}">
+</head>
+<body>
+  <div class="register-container">
+    <h1 class="brand">Travista</h1>
+    <p class="tagline">Begin your journey with us</p>
+    {% if error %}
+    <p class="form-error" role="alert">{{ error }}</p>
+    {% endif %}
+
+    <form class="register-form" action="/regi" method="post">
+
+       <label for="name">Full Name</label>
+      <input type="text" name="name" value="{{ form_data.get('name', '') }}" required>
+
+       <label for="age">Age</label>
+      <input type="number" name="age" value="{{ form_data.get('age', '') }}" min='18' required>
+
+       <label for="email">Email</label>
+      <input type="email" name="email" value="{{ form_data.get('email', '') }}" required
+        pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
+        title="Enter a valid email like name@gmail.com">
+
+         <label for="phone">Phone No.</label>
+      <input type="tel" name="phone" value="{{ form_data.get('phone', '') }}" required
+      pattern="[6-9][0-9]{9}">
+
+       <label for="role">Roles</label>
+      <select name="role" required>
+        <option value="">Select Role</option>
+        <option {% if form_data.get('role') == 'Traveller' %}selected{% endif %}>Traveller</option>
+        <option {% if form_data.get('role') == 'Tour Operator' %}selected{% endif %}>Tour Operator</option>
+      </select>
+
+       <label for="state">State</label>
+      <select id="state" name="state" data-selected="{{ form_data.get('state', '') }}" onchange="loadCities()" required>
+         <option value="">Select State</option>
+      </select>
+      
+       <label for="city">City</label>
+      <select id="city" name="city" data-selected="{{ form_data.get('city', '') }}" required>
+        <option value="">Select City</option>
+      </select>
+
+       <label for="pincode">Pincode</label>
+      <input type="text" name="pincode" value="{{ form_data.get('pincode', '') }}" pattern="[1-9][0-9]{5}" title="Pincode must be 6 digits" required>
+
+       <label for="address">Address</label>
+      <textarea  name="address" rows="3" pattern="[1-9][0-9]{5}" required>{{ form_data.get('address', '') }}</textarea>
+
+      <label for="username">Username</label>
+      <input type="text" name="username" value="{{ form_data.get('username', '') }}" required
+      pattern="^[A-Za-z][A-Za-z0-9_]{4,14}$"
+      title="Username must start with a letter, No special characters and be 5-15 characters">
+
+    <div class="password-box">
+       <label for="password">Password</label>
+      <input type="password" id="password" name="password" required
+      pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#]).+$"
+      title="Password must contain uppercase, lowercase, number and special character">
+      <button type="button" class="toggle" onclick="togglePassword()">Show</button>
+    </div>
+
+    <div class="password-box">
+      <label for="confirm_password" class="confirm">Confirm Password</label>
+      <input type="password" id="confirm_password" name="confirm_password" required>
+      <button type="button" class="toggle" onclick="toggleConfirmPassword()">Show</button>
+    </div>
+    
+      <button  id="okbtn " type="submit">Register</button>
+
+      <!-- Welcome Popup -->
+      <div id="welcomePopup" class="popup-overlay">
+       <div class="popup-card">
+        <h2>You are Welcome, Explorer!</h2>
+        <p>Your journey with Travista begins now</p>
+        <button onclick="closePopup()">Start Exploring</button>
+      </div>
+</div>
+    </form>
+
+    <p class="login-text">
+      Already have an account?
+      <a href="{{url_for('login')}}">Login</a>
+    </p>
+  </div>
+
+  <script src="{{ url_for('static', filename='regi.js') }}"></script>
+  <script src="{{ url_for('static', filename='mobile-app.js') }}"></script>
+
+  {% if success %}
+<script>
+    showPopup();
+</script>
+{% endif %}
+</body>
+</html>

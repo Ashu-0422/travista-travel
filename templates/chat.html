@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b3c5d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Travista">
+  <title>Trip Chat | Travista</title>
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
+  <link rel="icon" href="{{ url_for('static', filename='icons/app-icon.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='chat.css') }}" />
+</head>
+<body>
+  <div
+    id="chatApp"
+    data-trip-id="{{ trip.id }}"
+    data-trip-name="{{ trip.tripname }}"
+    data-current-username="{{ current_username }}"
+    data-back-url="{{ url_for('home') }}"
+    data-chat-closed="{{ 'true' if chat_closed else 'false' }}"
+    data-feedback-saved="{{ 'true' if feedback else 'false' }}"
+  ></div>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="{{ url_for('static', filename='chat.js') }}"></script>
+  <script src="{{ url_for('static', filename='mobile-app.js') }}"></script>
+</body>
+</html>

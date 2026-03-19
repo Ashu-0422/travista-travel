@@ -1,0 +1,133 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Playfair Display', serif;
+}
+
+body {
+  height: 100vh;
+  background: url("videos/lo.webp") center/cover no-repeat fixed;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+body::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(10, 20, 28, 0.45), rgba(10, 20, 28, 0.65));
+  z-index: 0;
+}
+
+/* Login box */
+.login-container {
+  position: relative;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(18px) saturate(1.2);
+  padding: 46px 40px;
+  border-radius: 22px;
+  width: 360px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+}
+
+/* Brand */
+.brand {
+  font-style: italic;
+  font-size: 2.8rem;
+  color: #eafcff;
+  letter-spacing: 4px;
+}
+
+.tagline {
+  margin: 10px 0 30px;
+  color: #cfeff5;
+  font-size: 0.95rem;
+}
+
+.password-box {
+  position: relative;
+}
+
+.password-box .toggle {
+  position: absolute;
+  right: 10px;
+  top: 34px;
+  width: auto;
+  margin-top: 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(234, 252, 255, 0.9);
+  color: #203a43;
+  cursor: pointer;
+  font-size: 0.78rem;
+}
+
+.login-form label {
+  display: block;
+  text-align: left;
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: #ffffff;
+}
+/* Inputs */
+.login-form input {
+  width: 100%;
+  padding: 12px 15px;
+  margin-bottom: 18px;
+  border: none;
+  outline: none;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  font-size: 0.95rem;
+}
+
+.login-form input::placeholder {
+  color: #dceff4;
+}
+
+/* Button */
+.login-form button {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 12px;
+  background: #eafcff;
+  color: #203a43;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.login-form button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+}
+
+/* Register */
+.register-text {
+  margin-top: 25px;
+  color: #d9f3f9;
+  font-size: 0.85rem;
+}
+
+.register-text a {
+  color: #ffffff;
+  text-decoration: underline;
+}
+
+/* Error messages */
+.form-error {
+  margin-top: 10px;
+  color: #ff6b6b;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
