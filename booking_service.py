@@ -1,5 +1,6 @@
 from collections import Counter
 from datetime import date, datetime, timedelta
+from dateutil.relativedelta import relativedelta
 import math
 
 from conn import conn, cursor
@@ -231,9 +232,9 @@ def get_recommendation_training_rows():
             o.destination,
             o.sourcedate,
             o.destinationdate,
-            DATEDIFF(day, o.sourcedate, o.destinationdate) + 1 AS trip_days
-        FROM dbo.TripBooking b
-        INNER JOIN dbo.[Operator] o ON o.id = b.trip_id
+            CAST(julianday(o.destinationdate) - julianday(o.sourcedate) + 1 AS INTEGER) AS trip_days
+        FROM TripBooking b
+        INNER JOIN Operator o ON o.id = b.trip_id
         ORDER BY b.id DESC
         """
     )
@@ -452,22 +453,19 @@ def ensure_booking_table():
     try:
         cursor.execute(
             """
-            IF OBJECT_ID('dbo.TripBooking', 'U') IS NULL
-            BEGIN
-                CREATE TABLE dbo.TripBooking (
-                    id INT IDENTITY(1,1) PRIMARY KEY,
-                    username NVARCHAR(80) NOT NULL,
-                    trip_id INT NOT NULL,
-                    full_name NVARCHAR(120) NOT NULL,
-                    email NVARCHAR(160) NOT NULL,
-                    phone NVARCHAR(20) NOT NULL,
-                    travelers INT NOT NULL,
-                    payment_mode NVARCHAR(50) NOT NULL,
-                    special_notes NVARCHAR(MAX) NULL,
-                    booking_ref NVARCHAR(30) NOT NULL,
-                    created_at DATETIME NOT NULL DEFAULT GETDATE()
-                )
-            END
+            CREATE TABLE IF NOT EXISTS TripBooking (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT NOT NULL,
+                trip_id INTEGER NOT NULL,
+                full_name TEXT NOT NULL,
+                email TEXT NOT NULL,
+                phone TEXT NOT NULL,
+                travelers INTEGER NOT NULL,
+                payment_mode TEXT NOT NULL,
+                special_notes TEXT,
+                booking_ref TEXT NOT NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
             """
         )
         conn.commit()
@@ -510,7 +508,7 @@ def create_booking(
     try:
         cursor.execute(
             """
-            INSERT INTO dbo.TripBooking
+            INSERT INTO TripBooking
             (username, trip_id, full_name, email, phone, travelers, payment_mode, special_notes, booking_ref)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
@@ -541,7 +539,7 @@ def get_user_trip_booking(username, trip_id):
 
     cursor.execute(
         """
-        SELECT TOP 1
+        SELECT
             booking_ref,
             full_name,
             email,
@@ -550,9 +548,10 @@ def get_user_trip_booking(username, trip_id):
             payment_mode,
             special_notes,
             created_at
-        FROM dbo.TripBooking
+        FROM TripBooking
         WHERE username = ? AND trip_id = ?
         ORDER BY id DESC
+        LIMIT 1
         """,
         (username, trip_id),
     )
@@ -574,10 +573,10 @@ def get_traveller_trip_stats(username):
         """
         SELECT
             COUNT(*) AS total_trips,
-            SUM(CASE WHEN o.destinationdate < CAST(GETDATE() AS DATE) THEN 1 ELSE 0 END) AS completed_trips,
-            SUM(CASE WHEN o.destinationdate >= CAST(GETDATE() AS DATE) THEN 1 ELSE 0 END) AS upcoming_trips
-        FROM dbo.TripBooking b
-        LEFT JOIN [Operator] o ON o.id = b.trip_id
+            SUM(CASE WHEN date(o.destinationdate) < date('now') THEN 1 ELSE 0 END) AS completed_trips,
+            SUM(CASE WHEN date(o.destinationdate) >= date('now') THEN 1 ELSE 0 END) AS upcoming_trips
+        FROM TripBooking b
+        LEFT JOIN Operator o ON o.id = b.trip_id
         WHERE b.username = ?
         """,
         (username,),
@@ -608,8 +607,8 @@ def get_traveller_bookings(username):
             o.destination,
             o.sourcedate,
             o.destinationdate
-        FROM dbo.TripBooking b
-        LEFT JOIN [Operator] o ON o.id = b.trip_id
+        FROM TripBooking b
+        LEFT JOIN Operator o ON o.id = b.trip_id
         WHERE b.username = ?
         ORDER BY b.id DESC
         """,
@@ -633,7 +632,7 @@ def get_trip_booking_summary_map(trip_ids):
             trip_id,
             COUNT(*) AS booking_count,
             SUM(travelers) AS traveler_count
-        FROM dbo.TripBooking
+        FROM TripBooking
         WHERE trip_id IN ({placeholders})
         GROUP BY trip_id
         """,
@@ -679,10 +678,11 @@ def get_operator_dashboard_metrics(operator_email):
         SELECT
             id,
             tripname,
-            TRY_CAST(price AS DECIMAL(18, 2)) AS price
-        FROM dbo.[Operator]
+            CAST(price AS REAL) AS price
+        FROM Operator
         WHERE email = ?
         ORDER BY id DESC
+        LIMIT 1
         """,
         (clean_email,),
     )
@@ -704,9 +704,9 @@ def get_operator_dashboard_metrics(operator_email):
         """
         SELECT
             COUNT(b.id) AS bookings,
-            COALESCE(SUM(TRY_CAST(o.price AS DECIMAL(18, 2)) * ISNULL(b.travelers, 0)), 0) AS revenue
-        FROM dbo.[Operator] o
-        LEFT JOIN dbo.TripBooking b ON b.trip_id = o.id
+            COALESCE(SUM(CAST(o.price AS REAL) * IFNULL(b.travelers, 0)), 0) AS revenue
+        FROM Operator o
+        LEFT JOIN TripBooking b ON b.trip_id = o.id
         WHERE o.email = ?
         """,
         (clean_email,),
@@ -718,12 +718,12 @@ def get_operator_dashboard_metrics(operator_email):
     cursor.execute(
         """
         SELECT
-            MONTH(b.created_at) AS booking_month,
+            CAST(strftime('%m', b.created_at) AS INTEGER) AS booking_month,
             COUNT(*) AS booking_count
-        FROM dbo.TripBooking b
-        INNER JOIN dbo.[Operator] o ON o.id = b.trip_id
-        WHERE o.email = ? AND YEAR(b.created_at) = YEAR(GETDATE())
-        GROUP BY MONTH(b.created_at)
+        FROM TripBooking b
+        INNER JOIN Operator o ON o.id = b.trip_id
+        WHERE o.email = ? AND CAST(strftime('%Y', b.created_at) AS INTEGER) = CAST(strftime('%Y', 'now') AS INTEGER)
+        GROUP BY booking_month
         ORDER BY booking_month ASC
         """,
         (clean_email,),
@@ -741,8 +741,8 @@ def get_operator_dashboard_metrics(operator_email):
             trip_id,
             COUNT(*) AS booking_count,
             COALESCE(SUM(travelers), 0) AS traveler_count
-        FROM dbo.TripBooking
-        WHERE trip_id IN (SELECT id FROM dbo.[Operator] WHERE email = ?)
+        FROM TripBooking
+        WHERE trip_id IN (SELECT id FROM Operator WHERE email = ?)
         GROUP BY trip_id
         """,
         (clean_email,),
@@ -764,9 +764,9 @@ def get_operator_dashboard_metrics(operator_email):
                 MAX(b.email) AS email,
                 COUNT(*) AS booking_count,
                 SUM(b.travelers) AS traveler_count,
-                COALESCE(SUM(TRY_CAST(o.price AS DECIMAL(18, 2)) * ISNULL(b.travelers, 0)), 0) AS revenue
-            FROM dbo.TripBooking b
-            INNER JOIN dbo.[Operator] o ON o.id = b.trip_id
+                COALESCE(SUM(CAST(o.price AS REAL) * IFNULL(b.travelers, 0)), 0) AS revenue
+            FROM TripBooking b
+            INNER JOIN Operator o ON o.id = b.trip_id
             WHERE o.email = ?
             GROUP BY b.trip_id, b.username
         ),
@@ -839,19 +839,14 @@ def get_operator_dashboard_metrics(operator_email):
     cursor.execute(
         """
         SELECT
-            CONCAT('W', RIGHT('0' + CAST(DATEPART(ISO_WEEK, week_start) AS VARCHAR(2)), 2)) AS label,
-            COALESCE(SUM(revenue_amount), 0) AS revenue
-        FROM (
-            SELECT
-                DATEADD(day, 1 - DATEPART(weekday, CAST(b.created_at AS DATE)), CAST(b.created_at AS DATE)) AS week_start,
-                TRY_CAST(o.price AS DECIMAL(18, 2)) * ISNULL(b.travelers, 0) AS revenue_amount
-            FROM dbo.TripBooking b
-            INNER JOIN dbo.[Operator] o ON o.id = b.trip_id
-            WHERE o.email = ?
-              AND b.created_at >= DATEADD(day, -56, CAST(GETDATE() AS DATE))
-        ) revenue_rows
-        GROUP BY week_start
-        ORDER BY MIN(week_start) ASC
+            printf('W%02d', CAST(strftime('%W', b.created_at) AS INTEGER)) AS label,
+            COALESCE(SUM(CAST(o.price AS REAL) * IFNULL(b.travelers, 0)), 0) AS revenue
+        FROM TripBooking b
+        INNER JOIN Operator o ON o.id = b.trip_id
+        WHERE o.email = ?
+          AND b.created_at >= date('now', '-56 days')
+        GROUP BY label
+        ORDER BY label ASC
         """,
         (clean_email,),
     )
@@ -860,23 +855,26 @@ def get_operator_dashboard_metrics(operator_email):
     cursor.execute(
         """
         SELECT
-            CONCAT(LEFT(DATENAME(month, month_start), 3), ' ', YEAR(month_start)) AS label,
-            COALESCE(SUM(revenue_amount), 0) AS revenue
-        FROM (
-            SELECT
-                DATEFROMPARTS(YEAR(b.created_at), MONTH(b.created_at), 1) AS month_start,
-                TRY_CAST(o.price AS DECIMAL(18, 2)) * ISNULL(b.travelers, 0) AS revenue_amount
-            FROM dbo.TripBooking b
-            INNER JOIN dbo.[Operator] o ON o.id = b.trip_id
-            WHERE o.email = ?
-              AND b.created_at >= DATEADD(month, -11, DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1))
-        ) revenue_rows
-        GROUP BY month_start
-        ORDER BY MIN(month_start) ASC
+            strftime('%Y-%m', b.created_at) AS year_month,
+            COALESCE(SUM(CAST(o.price AS REAL) * IFNULL(b.travelers, 0)), 0) AS revenue
+        FROM TripBooking b
+        INNER JOIN Operator o ON o.id = b.trip_id
+        WHERE o.email = ?
+          AND b.created_at >= date('now', '-11 months')
+        GROUP BY year_month
+        ORDER BY year_month ASC
         """,
         (clean_email,),
     )
-    monthly_revenue = [{"label": label, "value": float(value or 0)} for label, value in cursor.fetchall()]
+    monthly_revenue_dict = {year_month: float(value or 0) for year_month, value in cursor.fetchall()}
+
+    # Build the last 12 month labels (including months with zero revenue)
+    monthly_revenue = []
+    for i in range(11, -1, -1):
+        month = date.today().replace(day=1) - relativedelta(months=i)
+        label = month.strftime('%b %Y')
+        key = month.strftime('%Y-%m')
+        monthly_revenue.append({"label": label, "value": monthly_revenue_dict.get(key, 0.0)})
 
     cursor.execute(
         """
@@ -890,8 +888,8 @@ def get_operator_dashboard_metrics(operator_email):
                 b.username,
                 COUNT(*) AS booking_count,
                 SUM(b.travelers) AS total_travelers
-            FROM dbo.TripBooking b
-            INNER JOIN dbo.[Operator] o ON o.id = b.trip_id
+            FROM TripBooking b
+            INNER JOIN Operator o ON o.id = b.trip_id
             WHERE o.email = ?
             GROUP BY b.username
         ) customer_stats
@@ -905,8 +903,8 @@ def get_operator_dashboard_metrics(operator_email):
         SELECT
             payment_mode,
             COUNT(*) AS booking_count
-        FROM dbo.TripBooking b
-        INNER JOIN dbo.[Operator] o ON o.id = b.trip_id
+        FROM TripBooking b
+        INNER JOIN Operator o ON o.id = b.trip_id
         WHERE o.email = ?
         GROUP BY payment_mode
         ORDER BY booking_count DESC, payment_mode ASC
@@ -920,18 +918,19 @@ def get_operator_dashboard_metrics(operator_email):
 
     cursor.execute(
         """
-        SELECT TOP 5
+        SELECT
             b.username,
             MAX(b.full_name) AS full_name,
             MAX(b.email) AS email,
             COUNT(*) AS booking_count,
             SUM(b.travelers) AS traveler_count,
-            COALESCE(SUM(TRY_CAST(o.price AS DECIMAL(18, 2)) * ISNULL(b.travelers, 0)), 0) AS revenue
-        FROM dbo.TripBooking b
-        INNER JOIN dbo.[Operator] o ON o.id = b.trip_id
+            COALESCE(SUM(CAST(o.price AS REAL) * IFNULL(b.travelers, 0)), 0) AS revenue
+        FROM TripBooking b
+        INNER JOIN Operator o ON o.id = b.trip_id
         WHERE o.email = ?
         GROUP BY b.username
         ORDER BY traveler_count DESC, booking_count DESC, full_name ASC
+        LIMIT 5
         """,
         (clean_email,),
     )
@@ -1036,10 +1035,11 @@ def has_user_booked_trip(username, trip_id):
 
     cursor.execute(
         """
-        SELECT TOP 1 1
-        FROM dbo.TripBooking
+        SELECT 1
+        FROM TripBooking
         WHERE username = ? AND trip_id = ?
         ORDER BY id DESC
+        LIMIT 1
         """,
         (username, trip_id),
     )
@@ -1052,17 +1052,14 @@ def ensure_chat_table():
     try:
         cursor.execute(
             """
-            IF OBJECT_ID('dbo.TripChat', 'U') IS NULL
-            BEGIN
-                CREATE TABLE dbo.TripChat (
-                    id INT IDENTITY(1,1) PRIMARY KEY,
-                    username NVARCHAR(80) NOT NULL,
-                    trip_id INT NOT NULL,
-                    sender_role NVARCHAR(30) NOT NULL,
-                    message_text NVARCHAR(MAX) NOT NULL,
-                    created_at DATETIME NOT NULL DEFAULT GETDATE()
-                )
-            END
+            CREATE TABLE IF NOT EXISTS TripChat (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT NOT NULL,
+                trip_id INTEGER NOT NULL,
+                sender_role TEXT NOT NULL,
+                message_text TEXT NOT NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
             """
         )
         conn.commit()
@@ -1079,16 +1076,13 @@ def ensure_feedback_table():
     try:
         cursor.execute(
             """
-            IF OBJECT_ID('dbo.TripFeedback', 'U') IS NULL
-            BEGIN
-                CREATE TABLE dbo.TripFeedback (
-                    id INT IDENTITY(1,1) PRIMARY KEY,
-                    username NVARCHAR(80) NOT NULL,
-                    trip_id INT NOT NULL,
-                    feedback_text NVARCHAR(MAX) NOT NULL,
-                    created_at DATETIME NOT NULL DEFAULT GETDATE()
-                )
-            END
+            CREATE TABLE IF NOT EXISTS TripFeedback (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT NOT NULL,
+                trip_id INTEGER NOT NULL,
+                feedback_text TEXT NOT NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
             """
         )
         conn.commit()
@@ -1112,7 +1106,7 @@ def add_chat_message(username, trip_id, sender_role, message_text):
     try:
         cursor.execute(
             """
-            INSERT INTO dbo.TripChat (username, trip_id, sender_role, message_text)
+            INSERT INTO TripChat (username, trip_id, sender_role, message_text)
             VALUES (?, ?, ?, ?)
             """,
             (username, trip_id, sender_role, clean_message),
@@ -1132,10 +1126,11 @@ def get_user_trip_feedback(username, trip_id):
 
     cursor.execute(
         """
-        SELECT TOP 1 feedback_text, created_at
-        FROM dbo.TripFeedback
+        SELECT feedback_text, created_at
+        FROM TripFeedback
         WHERE username = ? AND trip_id = ?
         ORDER BY id DESC
+        LIMIT 1
         """,
         (username, trip_id),
     )
@@ -1164,7 +1159,7 @@ def save_trip_feedback(username, trip_id, feedback_text):
     try:
         cursor.execute(
             """
-            INSERT INTO dbo.TripFeedback (username, trip_id, feedback_text)
+            INSERT INTO TripFeedback (username, trip_id, feedback_text)
             VALUES (?, ?, ?)
             """,
             (username, trip_id, clean_feedback),
@@ -1192,8 +1187,8 @@ def get_trip_chat_messages(trip_id):
             c.message_text,
             c.created_at,
             COALESCE(r.name, c.username) AS sender_name
-        FROM dbo.TripChat c
-        LEFT JOIN dbo.[register] r ON r.username = c.username
+        FROM TripChat c
+        LEFT JOIN register r ON r.username = c.username
         WHERE c.trip_id = ?
         ORDER BY id ASC
         """,
